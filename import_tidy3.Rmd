@@ -180,6 +180,9 @@ length(mismatch_df$reporting_date.redcap) - length(na.omit(mismatch_df$reporting
 
 ```{r}
 mismatch_df
+
+#Wrote out .csv of problem dates
+#write_excel_csv(mismatch_df, "data/dates_mismatch.csv")
 ```
 
 

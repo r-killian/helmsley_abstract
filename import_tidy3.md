@@ -188,54 +188,64 @@ mismatch_df =
 full_join(asa24_df, visits_df, keep = TRUE, suffix = c('.asa', '.redcap'), by = c('id', 'reporting_date')) %>% 
   select(id.asa, id.redcap, reporting_date.asa, reporting_date.redcap, visit)
 
-length(mismatch_df$reporting_date.asa)
-```
+# mismatch_df %>% 
+#   filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
+#   mutate(
+#     id = coalesce(id.asa, id.redcap)) %>% 
+#   select(id, reporting_date.asa, reporting_date.redcap, visit) %>% 
+#   arrange(id) %>% 
+#   view()
 
-    ## [1] 1390
+#try again but after removing dropped participants
 
-``` r
-length(na.omit(mismatch_df$reporting_date.asa))
-```
+dropped = c(6 ,8, 21, 35, 42, 62, 63, 68, 69, 71, 73, 75, 78, 79, 85, 86, 102, 112)
 
-    ## [1] 1176
+mismatch_df = 
+  mismatch_df %>%
+    filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
+    mutate(
+      id = coalesce(id.asa, id.redcap)) %>% 
+    select(id, reporting_date.asa, reporting_date.redcap, visit) %>%
+    group_by(id) %>%
+    filter(!any(id %in% dropped)) %>% 
+    arrange(id)
 
-``` r
 length(mismatch_df$reporting_date.asa) - length(na.omit(mismatch_df$reporting_date.asa))
 ```
 
-    ## [1] 214
-
-We have 214 dates in the redcap set that do not have a corresponding
-asa24 entry
-
-``` r
-length(mismatch_df$reporting_date.redcap)
-```
-
-    ## [1] 1390
-
-``` r
-length(na.omit(mismatch_df$reporting_date.redcap))
-```
-
-    ## [1] 1163
+    ## [1] 121
 
 ``` r
 length(mismatch_df$reporting_date.redcap) - length(na.omit(mismatch_df$reporting_date.redcap))
 ```
 
-    ## [1] 227
+    ## [1] 166
 
-And 227 dates from the asa24 set that do not match to the redcap data
+121 missing from asa24 and 125 missing from redcap
 
 ``` r
-mismatch_df %>% 
-  filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
-  mutate(
-    id_all = coalesce(id.asa, id.redcap)) %>% 
-  select(id_all, reporting_date.asa, reporting_date.redcap, visit) %>% 
-  arrange(id_all) %>% 
-  view()
+mismatch_df
+```
+
+    ## # A tibble: 269 x 4
+    ## # Groups:   id [63]
+    ##       id reporting_date.asa  reporting_date.redcap visit  
+    ##    <dbl> <dttm>              <dttm>                <fct>  
+    ##  1     1 2020-01-07 00:00:00 NA                    <NA>   
+    ##  2     1 2020-01-10 00:00:00 NA                    <NA>   
+    ##  3     1 2020-01-12 00:00:00 NA                    <NA>   
+    ##  4     1 2020-06-30 00:00:00 NA                    <NA>   
+    ##  5     1 NA                  2020-01-06 00:00:00   Week 0 
+    ##  6     1 NA                  2020-01-09 00:00:00   Week 0 
+    ##  7     1 NA                  2020-01-11 00:00:00   Week 0 
+    ##  8     1 NA                  2020-06-02 00:00:00   Week 24
+    ##  9     3 2020-01-07 00:00:00 NA                    <NA>   
+    ## 10     3 2020-01-10 00:00:00 NA                    <NA>   
+    ## # ... with 259 more rows
+
+``` r
+#Wrote out .csv of problem dates
+#write_excel_csv(mismatch_df, "data/dates_mismatch.csv")
 ```
 
 Joining the data as well as dropping the dropouts noted earlier
@@ -283,8 +293,8 @@ Data summary
 
 | skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts                            |
 |:---------------|-----------:|---------------:|:--------|----------:|:---------------------------------------|
-| group          |        147 |           0.87 | FALSE   |         4 | Gro: 285, Gro: 270, Gro: 266, Gro: 203 |
-| visit          |        147 |           0.87 | FALSE   |         4 | Wee: 274, Wee: 270, Wee: 250, Wee: 230 |
+| group          |        148 |           0.87 | FALSE   |         4 | Gro: 285, Gro: 270, Gro: 265, Gro: 203 |
+| visit          |        148 |           0.87 | FALSE   |         4 | Wee: 274, Wee: 270, Wee: 249, Wee: 230 |
 
 **Variable type: numeric**
 
