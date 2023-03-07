@@ -142,9 +142,51 @@ completion_df %>%
 
 ### Join Datasets
 
+The dates from the ASA24 data and the redcap data do not always match up
+
+```{r mismatch}
+
+#find out where dates mismatch
+mismatch_df = 
+full_join(asa24_df, visits_df, keep = TRUE, suffix = c('.asa', '.redcap'), by = c('id', 'reporting_date')) %>% 
+  select(id.asa, id.redcap, reporting_date.asa, reporting_date.redcap, visit)
+
+# mismatch_df %>% 
+#   filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
+#   mutate(
+#     id = coalesce(id.asa, id.redcap)) %>% 
+#   select(id, reporting_date.asa, reporting_date.redcap, visit) %>% 
+#   arrange(id) %>% 
+#   view()
+
+#try again but after removing dropped participants
+
+dropped = c(6 ,8, 21, 35, 42, 62, 63, 68, 69, 71, 73, 75, 78, 79, 85, 86, 102, 112)
+
+mismatch_df = 
+  mismatch_df %>%
+    filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
+    mutate(
+      id = coalesce(id.asa, id.redcap)) %>% 
+    select(id, reporting_date.asa, reporting_date.redcap, visit) %>%
+    group_by(id) %>%
+    filter(!any(id %in% dropped)) %>% 
+    arrange(id)
+
+length(mismatch_df$reporting_date.asa) - length(na.omit(mismatch_df$reporting_date.asa))
+length(mismatch_df$reporting_date.redcap) - length(na.omit(mismatch_df$reporting_date.redcap))
+```
+121 missing from asa24 and 125 missing from redcap
+
+```{r}
+mismatch_df
+```
+
+
 Joining the data as well as dropping the dropouts noted earlier
 
 ```{r merge}
+
 eda_df = 
   left_join(asa24_df, visits_df, by = c("id", "reporting_date"))
 

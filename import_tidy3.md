@@ -180,6 +180,64 @@ completion_df %>%
 
 ### Join Datasets
 
+The dates from the ASA24 data and the redcap data do not always match up
+
+``` r
+#find out where dates mismatch
+mismatch_df = 
+full_join(asa24_df, visits_df, keep = TRUE, suffix = c('.asa', '.redcap'), by = c('id', 'reporting_date')) %>% 
+  select(id.asa, id.redcap, reporting_date.asa, reporting_date.redcap, visit)
+
+length(mismatch_df$reporting_date.asa)
+```
+
+    ## [1] 1390
+
+``` r
+length(na.omit(mismatch_df$reporting_date.asa))
+```
+
+    ## [1] 1176
+
+``` r
+length(mismatch_df$reporting_date.asa) - length(na.omit(mismatch_df$reporting_date.asa))
+```
+
+    ## [1] 214
+
+We have 214 dates in the redcap set that do not have a corresponding
+asa24 entry
+
+``` r
+length(mismatch_df$reporting_date.redcap)
+```
+
+    ## [1] 1390
+
+``` r
+length(na.omit(mismatch_df$reporting_date.redcap))
+```
+
+    ## [1] 1163
+
+``` r
+length(mismatch_df$reporting_date.redcap) - length(na.omit(mismatch_df$reporting_date.redcap))
+```
+
+    ## [1] 227
+
+And 227 dates from the asa24 set that do not match to the redcap data
+
+``` r
+mismatch_df %>% 
+  filter(is.na(reporting_date.asa) | is.na(reporting_date.redcap)) %>% 
+  mutate(
+    id_all = coalesce(id.asa, id.redcap)) %>% 
+  select(id_all, reporting_date.asa, reporting_date.redcap, visit) %>% 
+  arrange(id_all) %>% 
+  view()
+```
+
 Joining the data as well as dropping the dropouts noted earlier
 
 ``` r
@@ -225,8 +283,8 @@ Data summary
 
 | skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts                            |
 |:---------------|-----------:|---------------:|:--------|----------:|:---------------------------------------|
-| group          |        148 |           0.87 | FALSE   |         4 | Gro: 285, Gro: 270, Gro: 265, Gro: 203 |
-| visit          |        148 |           0.87 | FALSE   |         4 | Wee: 274, Wee: 270, Wee: 249, Wee: 230 |
+| group          |        147 |           0.87 | FALSE   |         4 | Gro: 285, Gro: 270, Gro: 266, Gro: 203 |
+| visit          |        147 |           0.87 | FALSE   |         4 | Wee: 274, Wee: 270, Wee: 250, Wee: 230 |
 
 **Variable type: numeric**
 
