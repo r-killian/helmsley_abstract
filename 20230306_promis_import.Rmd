@@ -1,9 +1,8 @@
 ---
 title: "PROMIS Import"
 author: "Rosie Killian"
-date: "`r Sys.Date()`"
-output:
-  github_document
+date: "3/6/2023"
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

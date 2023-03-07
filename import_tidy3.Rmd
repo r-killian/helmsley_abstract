@@ -186,7 +186,7 @@ mismatch_df
 ```
 
 
-Joining the data as well as dropping the dropouts noted earlier
+Joining the data as well as dropping the dropouts noted earlier as well as incomplete study participants
 
 ```{r merge}
 
@@ -195,7 +195,7 @@ eda_df =
 
 eda_df = 
   left_join(eda_df, completion_df, by = "id") %>% 
-  filter(is.na(completedyesno) | !completedyesno == 0) %>% 
+  filter(!completedyesno == 0) %>% 
   relocate(id, reporting_date, group, visit)
 
 ```
