@@ -2,11 +2,7 @@
 title: "Data Import and Tidy"
 author: "Rose Killian"
 date: "3/6/2023"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
-    code_folding: show
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

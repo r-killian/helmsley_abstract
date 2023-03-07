@@ -3,10 +3,7 @@ title: "PROMIS Import"
 author: "Rosie Killian"
 date: "`r Sys.Date()`"
 output:
-  html_document:
-    toc: true
-    toc_float: true
-    code_folding: show
+  github_document
 ---
 
 ```{r setup, include=FALSE}
