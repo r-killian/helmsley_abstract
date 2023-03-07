@@ -1,0 +1,140 @@
+---
+title: "PROMIS Import"
+author: "Rosie Killian"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+##### Load libraries and settings
+
+```{r libraries and settings, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(viridis)
+library(readxl)
+library(lubridate)
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+### Promise Data
+
+Importing promise data.
+
+```{r import asa24}
+prom_df = 
+  read_excel(
+    "data/Promise more data.xlsx") %>%
+  janitor::clean_names() %>% 
+  select(!ends_with("std_error")) %>% 
+  filter(!grepl('[Oo]ut', registration_id)) %>% 
+  rename(
+      anxiety_visit1 = visit_1_screening_arm_1_promis_sf_v10anxiety_4a_tscore,
+      anxiety_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v10anxiety_4a_tscore,
+      anxiety_visit3 = visit_3_last_ibds_arm_1_promis_sf_v10anxiety_4a_tscore,
+      depression_visit1 = visit_1_screening_arm_1_promis_sf_v10depression_4a_tscore,
+      depression_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v10depression_4a_tscore,
+      depression_visit3 =  visit_3_last_ibds_arm_1_promis_sf_v10depression_4a_tscore,
+      fatigue_visit1 = visit_1_screening_arm_1_promis_sf_v10fatigue_4a_tscore,
+      fatigue_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v10fatigue_4a_tscore,
+      fatigue_visit3 = visit_3_last_ibds_arm_1_promis_sf_v10fatigue_4a_tscore,
+      sleepdisturbance_visit1 = visit_1_screening_arm_1_promis_sf_v10sleep_disturbance_4a_tscore,
+      sleepdisturbance_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v10sleep_disturbance_4a_tscore,
+      sleepdisturbance_visit3 = visit_3_last_ibds_arm_1_promis_sf_v10sleep_disturbance_4a_tscore,
+      abilitytoparticipatesocial_visit1 = visit_1_screening_arm_1_promis_sf_v20_ability_to_participate_social_4a_tscore,
+      abilitytoparticipatesocial_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v20_ability_to_participate_social_4a_tscore,
+      abilitytoparticipatesocial_visit3 = visit_3_last_ibds_arm_1_promis_sf_v20_ability_to_participate_social_4a_tscore,
+      paininterference_visit1 = visit_1_screening_arm_1_promis_sf_v10pain_interference_4a_tscore,
+      paininterference_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v10pain_interference_4a_tscore,
+      paininterference_visit3 = visit_3_last_ibds_arm_1_promis_sf_v10pain_interference_4a_tscore,
+      emotionalsupport_visit1 = visit_1_screening_arm_1_promis_sf_v20_emotional_support_4a_tscore,
+      emotionalsupport_visit2 = visit_2_ibdsdtzoo_arm_1_promis_sf_v20_emotional_support_4a_tscore,
+      emotionalsupport_visit3 = visit_3_last_ibds_arm_1_promis_sf_v20_emotional_support_4a_tscore,
+      physicalfunction_visit3 = visit_3_last_ibds_arm_1_promis_sf_v10physical_function_4a_tscore,
+      hispanic = visit_1_screening_arm_1_hispanic2_1_yes_2_no_3_unknown_or_not_reported,
+      individualnumber = registration_arm_1_individual_number_100_partner_101_sibling_1001_mother,
+      familynumber = registration_arm_1_family_number,
+      sex = registration_arm_1_sex_0_female_1_male_2_unknown,
+      groups = registration_arm_1_ramdom
+  ) %>% 
+  mutate(
+    groups = as_factor(groups),
+    groups = recode_factor(groups, `1` = "Group 1", `2` = "Group 2", `3` = "Group 3P", `4` = "Group 3C"),
+    hispanic = factor(hispanic),
+    hispanic = recode_factor(hispanic,`1` = "Yes", `2` = "No", `3` = "Unknown"),
+    sex = factor(sex),
+    sex = recode_factor(sex,`0` = "Female", `1` = "Male", `2` = "Unknown"),
+    individualnumber = factor(individualnumber),
+    individualnumber = recode_factor(individualnumber, `100` = "Partner", `101` = "Sibling", `1001` = "Mother")
+  )
+```
+
+### Pivot longer
+
+```{r}
+prom_df =
+  prom_df %>% 
+  relocate(
+    registration_id,
+    groups,
+    age,
+    sex,
+    hispanic,
+    individualnumber,
+    familynumber,
+    anxiety_visit2,
+    anxiety_visit1,
+    anxiety_visit3,
+    depression_visit1,
+    depression_visit2,
+    depression_visit3,
+    fatigue_visit1,
+    fatigue_visit2,
+    fatigue_visit3,
+    sleepdisturbance_visit1,
+    sleepdisturbance_visit2,
+    sleepdisturbance_visit3,
+    abilitytoparticipatesocial_visit1,
+    abilitytoparticipatesocial_visit2,
+    abilitytoparticipatesocial_visit3,
+    paininterference_visit1,
+    paininterference_visit2,
+    paininterference_visit3,
+    emotionalsupport_visit1,
+    emotionalsupport_visit2,
+    emotionalsupport_visit3
+  )
+
+prom_df =
+  prom_df %>% 
+    pivot_longer(-c(registration_id, groups, age, sex, hispanic, individualnumber, familynumber),
+                 names_to = c(".value", "visit"), 
+                 names_sep = "_") %>% 
+    mutate(
+      visit = factor(visit),
+      visit = recode_factor(visit, `visit1` = "Week 0", `visit2` = "Week 8", `visit3` = "Week 36")
+      )
+
+prom_df
+
+skimr::skim(prom_df)
+```

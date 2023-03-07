@@ -1,0 +1,170 @@
+---
+title: "Data Import and Tidy"
+author: "Rose Killian"
+date: "3/6/2023"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+##### Load libraries and settings
+
+```{r libraries and settings, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(viridis)
+library(readxl)
+library(lubridate)
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+##### Version notes
+Discrepancy with IDs 299 and 300 resolved. Both are aliases for ID 10. These observations can now be assigned to their group and will no longer be dropped. 
+
+I was also given data from REDcap that lists the dates of each patient visit and the week that that visit fell on. 
+
+### Import
+
+#### ASA24 Data
+```{r import asa24}
+asa24_df = 
+  read_excel(
+    "data/TOTAL ASA24 DATA - Luis healthy and unhealthy foods.xlsx",
+    sheet = "HelmCroh + HelmCr") %>%
+  janitor::clean_names() %>% 
+  select(
+    user_name, recall_no, intake_start_date_time, intake_end_date_time, reporting_date, f_total, v_total, v_legumes, g_whole, pf_poult, pf_seafd_hi, pf_seafd_low, pf_nutsds, pf_legumes, d_yogurt, g_refined, pf_meat, pf_curedmeat, solid_fats, add_sugars, kcal, prot, tfat, carb, sugr, fibe, sfat, chole
+  ) %>% 
+mutate(
+  id = str_replace(user_name, "HelmCroh", ""))
+
+#R gets mad if I try to remove the different username prefixes in the same step. I'm sure there is a more elegant way to do this but this works so for now this is how it is. Code above imports, cleans names, and removes the first prefix used for user_name and makes new variable "id". Code below removes second prefix and converts vector to numeric.
+
+asa24_df = 
+  asa24_df %>% 
+  mutate(id = str_replace(id, "HelmCr", "")) %>% 
+  mutate(
+    id = as.numeric(id)) %>% 
+  relocate(id) %>% 
+  arrange(id, reporting_date)
+```
+
+#### Visits data
+```{r visit dates}
+visits_df = 
+  read_excel(
+    "data/AHolisticDietInterve_DATA_2023-03-06_1029.xlsx") %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    group = as_factor(registration_arm_1_ramdom),
+    group = recode_factor(group, `1` = "Group 1", `2` = "Group 2", `3` = "Group 3P", `4` = "Group 3C")) %>% 
+  rename(
+    `1a` = visit_1_screening_arm_1_asa24_weekdate,
+    `1b` = visit_1_screening_arm_1_dateasa24_weekday2,
+    `1c` = visit_1_screening_arm_1_asa24_weekenddate,
+    `2a` = week_12_ibdzoom_5_arm_1_asa24_weekdate,
+    `2b` = week_12_ibdzoom_5_arm_1_dateasa24_weekday2,
+    `2c` = week_12_ibdzoom_5_arm_1_asa24_weekenddate,
+    `3a` = week_24_ibd_zoom_7_arm_1_asa24_weekdate,
+    `3b` = week_24_ibd_zoom_7_arm_1_dateasa24_weekday2,
+    `3c` = week_24_ibd_zoom_7_arm_1_asa24_weekenddate,
+    `4a` = visit_3_last_ibds_arm_1_asa24_weekdate,
+    `4b` = visit_3_last_ibds_arm_1_dateasa24_weekday2,
+    `4c` = visit_3_last_ibds_arm_1_asa24_weekenddate,
+    id = registration_arm_1_internal_pt_id
+  ) %>% 
+  select(
+    id, group, `1a`, `1b`, `1c`, `2a`, `2b`, `2c`, `3a`, `3b`, `3c`, `4a`, `4b`, `4c`
+  ) %>% 
+  pivot_longer(`1a`:`4c`,
+               names_to = "visit",
+               values_to = "reporting_date",
+               names_pattern = "(.*)[a-c]") %>% 
+  mutate(
+    visit = as_factor(visit),
+    visit = recode_factor(visit, `1` = "Week 0", `2` = "Week 12", `3` = "Week 24", `4` = "Week 36")
+  ) %>% 
+  relocate(id, reporting_date) %>% 
+  arrange(id, reporting_date) %>% 
+  distinct()
+```
+
+
+#### Completion data
+
+```{r import completion}
+completion_df = 
+  read_csv(
+    "data/AHolisticDietInterve_DATA_2023-03-06_1242.csv") %>% 
+      janitor::clean_names() %>% 
+  rename(id = registration_arm_1_internal_pt_id,
+         completedyesno = registration_arm_1_completedyesno)
+
+completion_df %>% 
+  group_by(completedyesno) %>% 
+  summarise(n_obs = n()) %>% 
+  knitr::kable()
+```
+Looking at the variable for study completion, we have 93 patients that have completed the study, 18 that have been marked as dropped out/incomplete, and 4 who are missing any designation (possibly still in process of completing the study). Patients marked as dropped out will be dropped from the data.
+
+##### Table of Dropouts
+
+```{r dropout table}
+completion_df %>% 
+  filter(completedyesno == 0) %>% 
+  select(id, completedyesno) %>% 
+  knitr::kable()
+```
+
+
+```{r test of drop dropouts}
+#start_completion =
+#  start_completion %>% 
+#  filter(is.na(completedyesno) | !completedyesno == 0)
+
+#This code was used to make sure that only the participants marked as having dropped out were dropped from the dataset.
+```
+
+
+### Join Datasets
+
+Joining the data as well as dropping the dropouts noted earlier
+
+```{r merge}
+eda_df = 
+  left_join(asa24_df, visits_df, by = c("id", "reporting_date"))
+
+eda_df = 
+  left_join(eda_df, completion_df, by = "id") %>% 
+  filter(is.na(completedyesno) | !completedyesno == 0) %>% 
+  relocate(id, reporting_date, group, visit)
+
+```
+
+### Visualization
+
+```{r merged data overview}
+skimr::skim(eda_df)
+```
+
+148 entries missing their visit date (and group). Need to try matching visit date with intake_start_date-time? 
+
+* Absolutely not. Missing increased to 830!
